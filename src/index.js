@@ -53,19 +53,38 @@ app.get("/", (req, res) => {
   res.redirect("/dashboard");
 });
 
+// ---------- Dashboard Auth ----------
+
+const DASHBOARD_PASSWORD = process.env.DASHBOARD_PASSWORD || "Myliunoju1+";
+
+app.post("/api/auth", (req, res) => {
+  const { password } = req.body;
+  if (password === DASHBOARD_PASSWORD) {
+    return res.json({ success: true });
+  }
+  return res.status(401).json({ success: false, error: "Wrong password" });
+});
+
 // ---------- Dashboard Routes ----------
 
 app.get("/dashboard", (req, res) => {
   res.sendFile(path.join(__dirname, "..", "public", "dashboard.html"));
 });
 
-app.get("/api/calls", (req, res) => {
+function requireAuth(req, res, next) {
+  if (req.headers["x-auth"] === DASHBOARD_PASSWORD) {
+    return next();
+  }
+  return res.status(401).json({ error: "Unauthorized" });
+}
+
+app.get("/api/calls", requireAuth, (req, res) => {
   const calls = getAllCalls();
   const stats = getCallStats();
   res.json({ calls, stats });
 });
 
-app.get("/api/calls/:id", (req, res) => {
+app.get("/api/calls/:id", requireAuth, (req, res) => {
   const call = getCall(req.params.id);
   if (!call) {
     return res.status(404).json({ error: "Call not found" });
@@ -73,14 +92,14 @@ app.get("/api/calls/:id", (req, res) => {
   res.json(call);
 });
 
-app.get("/api/stats", (req, res) => {
+app.get("/api/stats", requireAuth, (req, res) => {
   const stats = getCallStats();
   res.json(stats);
 });
 
 // ---------- Costs API ----------
 
-app.get("/api/costs", (req, res) => {
+app.get("/api/costs", requireAuth, (req, res) => {
   const calls = getAllCalls();
   const stats = getCallStats();
 
@@ -132,11 +151,11 @@ app.get("/api/costs", (req, res) => {
 
 // ---------- Voice Settings API ----------
 
-app.get("/api/voice", (req, res) => {
+app.get("/api/voice", requireAuth, (req, res) => {
   res.json(currentVoice);
 });
 
-app.post("/api/voice", async (req, res) => {
+app.post("/api/voice", requireAuth, async (req, res) => {
   const { voiceId, stability, similarityBoost, style } = req.body;
   if (!voiceId) {
     return res.status(400).json({ error: "voiceId is required" });

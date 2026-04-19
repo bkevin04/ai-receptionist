@@ -731,6 +731,94 @@
       .rate-item .rate-name { color: var(--text-secondary); text-transform: capitalize; }
       .rate-item .rate-value { font-weight: 600; color: var(--text); }
 
+      /* ---- Login Screen ---- */
+      .login-screen {
+        position: fixed;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        background: var(--bg);
+        z-index: 999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .login-screen.hidden { display: none; }
+
+      .login-box {
+        background: var(--card-bg);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        padding: 40px;
+        box-shadow: var(--shadow-lg);
+        width: 100%;
+        max-width: 400px;
+        text-align: center;
+      }
+
+      .login-box .logo {
+        width: 56px;
+        height: 56px;
+        background: var(--primary);
+        border-radius: var(--radius-lg);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 28px;
+        margin-bottom: 20px;
+      }
+
+      .login-box h1 {
+        font-size: 22px;
+        font-weight: 700;
+        margin-bottom: 6px;
+      }
+
+      .login-box p {
+        color: var(--text-secondary);
+        font-size: 14px;
+        margin-bottom: 24px;
+      }
+
+      .login-box input[type="password"] {
+        width: 100%;
+        padding: 12px 16px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        font-size: 15px;
+        outline: none;
+        transition: border-color 0.15s;
+        margin-bottom: 12px;
+      }
+
+      .login-box input[type="password"]:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+      }
+
+      .login-box .login-btn {
+        width: 100%;
+        padding: 12px;
+        background: var(--primary);
+        color: white;
+        border: none;
+        border-radius: var(--radius);
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.15s;
+      }
+
+      .login-box .login-btn:hover { background: var(--primary-light); }
+
+      .login-error {
+        color: var(--danger);
+        font-size: 13px;
+        margin-top: 12px;
+        min-height: 20px;
+      }
+
       /* ---- Responsive Table ---- */
       @media (max-width: 900px) {
         .calls-table thead { display: none; }
@@ -755,6 +843,20 @@
     </style>
   </head>
   <body>
+    <!-- Login Screen -->
+    <div class="login-screen" id="loginScreen">
+      <div class="login-box">
+        <div class="logo">R</div>
+        <h1>AI Receptionist</h1>
+        <p>Enter the password to view the dashboard</p>
+        <form id="loginForm" onsubmit="handleLogin(event)">
+          <input type="password" id="loginPassword" placeholder="Password" autocomplete="current-password" autofocus />
+          <button type="submit" class="login-btn">Sign in</button>
+        </form>
+        <div class="login-error" id="loginError"></div>
+      </div>
+    </div>
+
     <!-- Top Navigation -->
     <nav class="topnav">
       <div class="topnav-brand">
@@ -895,6 +997,58 @@
     </div>
 
     <script>
+      // ============================================================
+      //  AUTHENTICATION
+      // ============================================================
+      let authToken = sessionStorage.getItem("ai-receptionist-auth") || "";
+
+      function authHeaders() {
+        return { "x-auth": authToken };
+      }
+
+      async function handleLogin(e) {
+        e.preventDefault();
+        const pw = document.getElementById("loginPassword").value;
+        const errorEl = document.getElementById("loginError");
+        errorEl.textContent = "";
+
+        try {
+          const resp = await fetch("/api/auth", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ password: pw }),
+          });
+
+          if (resp.ok) {
+            authToken = pw;
+            sessionStorage.setItem("ai-receptionist-auth", pw);
+            document.getElementById("loginScreen").classList.add("hidden");
+            loadCalls();
+          } else {
+            errorEl.textContent = "Wrong password. Try again.";
+            document.getElementById("loginPassword").value = "";
+            document.getElementById("loginPassword").focus();
+          }
+        } catch {
+          errorEl.textContent = "Connection error. Try again.";
+        }
+      }
+
+      // Check if we have a saved session
+      async function checkAuth() {
+        if (!authToken) return;
+        try {
+          const resp = await fetch("/api/stats", { headers: authHeaders() });
+          if (resp.ok) {
+            document.getElementById("loginScreen").classList.add("hidden");
+            return;
+          }
+        } catch {}
+        // Token invalid — clear it
+        authToken = "";
+        sessionStorage.removeItem("ai-receptionist-auth");
+      }
+
       // ============================================================
       //  INTERNATIONALIZATION
       // ============================================================
@@ -1155,7 +1309,7 @@
           const voice = voices.find((v) => v.id === voiceId);
           const resp = await fetch("/api/voice", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json", ...authHeaders() },
             body: JSON.stringify({
               voiceId: voice.id,
               stability: voice.stability,
@@ -1183,7 +1337,7 @@
       // ============================================================
       async function loadCalls() {
         try {
-          const response = await fetch("/api/calls");
+          const response = await fetch("/api/calls", { headers: authHeaders() });
           const data = await response.json();
           const { calls, stats } = data;
 
@@ -1271,7 +1425,7 @@
       // ============================================================
       async function viewCallDetail(callId) {
         try {
-          const response = await fetch(`/api/calls/${callId}`);
+          const response = await fetch(`/api/calls/${callId}`, { headers: authHeaders() });
           const call = await response.json();
 
           const modal = document.getElementById("callModal");
@@ -1447,7 +1601,7 @@
 
       async function loadCosts() {
         try {
-          const resp = await fetch("/api/costs");
+          const resp = await fetch("/api/costs", { headers: authHeaders() });
           const data = await resp.json();
           const { summary, rates, calls } = data;
 
@@ -1603,7 +1757,10 @@
       // ============================================================
       //  INIT
       // ============================================================
-      (function init() {
+      (async function init() {
+        // Check if we have a saved auth session
+        await checkAuth();
+
         // Restore saved language
         const savedLang = localStorage.getItem("ai-receptionist-lang");
         if (savedLang && savedLang !== currentLang) {
@@ -1615,8 +1772,8 @@
         if (savedVoice) selectedVoice = savedVoice;
 
         renderVoiceOptions();
-        loadCalls();
-        setInterval(loadCalls, 5000);
+        if (authToken) loadCalls();
+        setInterval(() => { if (authToken) loadCalls(); }, 5000);
       })();
     </script>
   </body>
