@@ -50,12 +50,7 @@ let currentVoice = {
 // ---------- Health Check ----------
 
 app.get("/", (req, res) => {
-  res.json({
-    status: "running",
-    service: "AI Receptionist - Dutch Plumber",
-    version: "1.0.0",
-    dashboard: "http://localhost:3000/dashboard",
-  });
+  res.redirect("/dashboard");
 });
 
 // ---------- Dashboard Routes ----------
