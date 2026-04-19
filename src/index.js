@@ -39,6 +39,14 @@ const PORT = process.env.PORT || 3000;
 // Active calls (tracks calls in progress)
 const activeCalls = new Map();
 
+// Voice setting (persisted in memory, applied to next call)
+let currentVoice = {
+  voiceId: "XrExE9yKIg1WjnnlVkGX", // Matilda — default
+  stability: 0.55,
+  similarityBoost: 0.75,
+  style: 0.25,
+};
+
 // ---------- Health Check ----------
 
 app.get("/", (req, res) => {
@@ -73,6 +81,117 @@ app.get("/api/calls/:id", (req, res) => {
 app.get("/api/stats", (req, res) => {
   const stats = getCallStats();
   res.json(stats);
+});
+
+// ---------- Costs API ----------
+
+app.get("/api/costs", (req, res) => {
+  const calls = getAllCalls();
+  const stats = getCallStats();
+
+  // Per-call cost list (newest first, only calls that have cost data)
+  const callCosts = calls.map((c) => ({
+    id: c.id,
+    timestamp: c.timestamp,
+    duration: c.duration || 0,
+    cost: c.cost ?? null,
+    costBreakdown: c.costBreakdown ?? null,
+    customerName: c.customerName || null,
+    briefIssue: c.briefIssue || null,
+  }));
+
+  // Estimate costs for calls that don't have Vapi cost data
+  // Typical per-minute rates (USD):
+  const estimatedRates = {
+    vapi: 0.05,       // Vapi platform fee ~$0.05/min
+    deepgram: 0.0059, // Deepgram Nova-2 ~$0.0059/min
+    openai: 0.03,     // GPT-4o ~$0.03/min (varies with tokens)
+    elevenlabs: 0.30, // ElevenLabs ~$0.30/min (turbo v2.5)
+    transport: 0.02,  // Twilio/telephony ~$0.02/min
+  };
+  const estimatedTotalPerMin = Object.values(estimatedRates).reduce((a, b) => a + b, 0);
+
+  // For calls without cost data, estimate from duration
+  let estimatedTotal = 0;
+  for (const c of callCosts) {
+    if (c.cost == null && c.duration > 0) {
+      c.estimatedCost = parseFloat(((c.duration / 60) * estimatedTotalPerMin).toFixed(4));
+      estimatedTotal += c.estimatedCost;
+    }
+  }
+
+  res.json({
+    summary: {
+      totalCalls: stats.totalCalls,
+      totalCost: stats.totalCost,
+      averageCostPerCall: stats.averageCostPerCall,
+      costByProvider: stats.costByProvider,
+      costByDay: stats.costByDay,
+      estimatedTotal,
+      totalMinutes: parseFloat((stats.totalDuration / 60).toFixed(1)),
+    },
+    rates: estimatedRates,
+    calls: callCosts,
+  });
+});
+
+// ---------- Voice Settings API ----------
+
+app.get("/api/voice", (req, res) => {
+  res.json(currentVoice);
+});
+
+app.post("/api/voice", async (req, res) => {
+  const { voiceId, stability, similarityBoost, style } = req.body;
+  if (!voiceId) {
+    return res.status(400).json({ error: "voiceId is required" });
+  }
+  currentVoice = {
+    voiceId,
+    stability: stability ?? 0.55,
+    similarityBoost: similarityBoost ?? 0.75,
+    style: style ?? 0.25,
+  };
+  console.log(`[voice] Updated voice to: ${voiceId} (stability=${currentVoice.stability}, style=${currentVoice.style})`);
+
+  // Update the Vapi assistant directly so the next call uses the new voice
+  const VAPI_API_KEY = process.env.VAPI_API_KEY;
+  const ASSISTANT_ID = "4c976962-87f8-44f1-87c2-dfd4361463e5";
+
+  if (VAPI_API_KEY && VAPI_API_KEY !== "your_vapi_api_key_here") {
+    try {
+      const vapiRes = await fetch(`https://api.vapi.ai/assistant/${ASSISTANT_ID}`, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${VAPI_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          voice: {
+            provider: "11labs",
+            voiceId: currentVoice.voiceId,
+            stability: currentVoice.stability,
+            similarityBoost: currentVoice.similarityBoost,
+            style: currentVoice.style,
+            useSpeakerBoost: true,
+          },
+        }),
+      });
+
+      if (vapiRes.ok) {
+        console.log(`[voice] Vapi assistant updated successfully`);
+      } else {
+        const err = await vapiRes.text();
+        console.error(`[voice] Vapi update failed: ${err}`);
+        return res.json({ success: false, error: "Failed to update Vapi assistant", voice: currentVoice });
+      }
+    } catch (err) {
+      console.error(`[voice] Vapi update error: ${err.message}`);
+      return res.json({ success: false, error: err.message, voice: currentVoice });
+    }
+  }
+
+  res.json({ success: true, voice: currentVoice });
 });
 
 // ---------- Vapi Webhook Endpoint ----------
@@ -130,6 +249,16 @@ function handleAssistantRequest(message, res) {
   // Load company profile — swap this import to switch companies
   const nojusPlumbers = require("./companies/nojus-plumbers");
   const config = createAssistantConfig(nojusPlumbers);
+
+  // Apply the currently selected voice
+  config.voice = {
+    provider: "11labs",
+    voiceId: currentVoice.voiceId,
+    stability: currentVoice.stability,
+    similarityBoost: currentVoice.similarityBoost,
+    style: currentVoice.style,
+    useSpeakerBoost: true,
+  };
 
   return res.json({ assistant: config });
 }
@@ -468,6 +597,8 @@ function handleEndOfCallReport(message, res) {
     duration,
     call,
     assistant,
+    cost,
+    costBreakdown,
   } = message;
 
   const callId = call?.id;
@@ -516,6 +647,29 @@ function handleEndOfCallReport(message, res) {
 
   console.log(`  Summary line: ${summaryLine}`);
 
+  // Extract cost data from the report
+  // Vapi may provide cost as a top-level number or as a detailed breakdown
+  const callCost = cost ?? call?.cost ?? null;
+  const callCostBreakdown = costBreakdown ?? call?.costBreakdown ?? call?.costs ?? null;
+
+  // Build a normalized cost object
+  const costData = {};
+  if (callCost != null) {
+    costData.total = typeof callCost === "number" ? callCost : parseFloat(callCost) || 0;
+  }
+  if (callCostBreakdown) {
+    // Vapi sends breakdown with keys like: transport, stt, llm, tts, vapi
+    costData.breakdown = callCostBreakdown;
+  }
+  // Also check for per-component cost fields Vapi sometimes puts on the call object
+  if (call?.costs) {
+    costData.breakdown = costData.breakdown || call.costs;
+  }
+
+  if (callCost != null) {
+    console.log(`  Cost: $${costData.total?.toFixed(4)}`);
+  }
+
   // Save call log
   const callLogId = generateCallId();
   const callLog = saveCallLog({
@@ -537,6 +691,8 @@ function handleEndOfCallReport(message, res) {
     briefIssue,
     recordingUrl,
     customerPhoneNumber: call?.phoneNumber?.number,
+    cost: costData.total ?? null,
+    costBreakdown: costData.breakdown ?? null,
   });
 
   console.log(`  Call saved with ID: ${callLogId}`);
@@ -578,17 +734,27 @@ function handleTranscript(message, res) {
 
 // ---------- Start Server ----------
 
-app.listen(PORT, async () => {
-  console.log(`\nAI Receptionist webhook server running on port ${PORT}`);
-  console.log(`  Health check: http://localhost:${PORT}/`);
-  console.log(`  Webhook URL:  http://localhost:${PORT}/api/webhook`);
+// When running locally (not on Vercel), start the server
+if (!process.env.VERCEL) {
+  app.listen(PORT, async () => {
+    console.log(`\nAI Receptionist webhook server running on port ${PORT}`);
+    console.log(`  Health check: http://localhost:${PORT}/`);
+    console.log(`  Webhook URL:  http://localhost:${PORT}/api/webhook`);
 
-  // Initialize Google Calendar
-  console.log("\n[Initialization]");
-  await initializeCalendar();
+    // Initialize Google Calendar
+    console.log("\n[Initialization]");
+    await initializeCalendar();
 
-  console.log(
-    `\nFor production, expose this URL via ngrok or deploy to a cloud provider.`
+    console.log(
+      `\nFor production, expose this URL via ngrok or deploy to a cloud provider.`
+    );
+    console.log(`Then set the Server URL in your Vapi assistant config.\n`);
+  });
+} else {
+  // On Vercel, initialize calendar eagerly
+  initializeCalendar().catch((err) =>
+    console.error("[init] Calendar init failed:", err.message)
   );
-  console.log(`Then set the Server URL in your Vapi assistant config.\n`);
-});
+}
+
+module.exports = app;

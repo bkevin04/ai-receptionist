@@ -226,11 +226,17 @@ Als de escalateToHuman-functie wordt aangeroepen en het resultaat aangeeft dat e
     silenceTimeoutSeconds: 30,
     maxDurationSeconds: 600,
     backgroundSound: "office",
-    backchannelingEnabled: false,  // Disabled — was interrupting callers mid-sentence
+    backchannelingEnabled: false,     // Disabled — was interrupting callers mid-sentence
     backgroundDenoisingEnabled: true,
-    numWordsToInterruptAssistant: 5, // Caller needs 5 words to interrupt the AI (avoids accidental cuts)
-    responseDelaySeconds: 0.8,       // Wait 0.8s after caller stops before responding
-    interruptionsEnabled: false,     // Don't let the AI interrupt the caller
+    numWordsToInterruptAssistant: 3,  // Caller needs 3 words to interrupt the AI (natural but avoids noise triggers)
+    responseDelaySeconds: 1.5,        // Wait 1.5s after caller stops — gives breathing room, avoids cutting off
+    interruptionsEnabled: true,       // Let the caller interrupt the AI so it stops talking when they speak
+    transportConfigurations: [
+      {
+        provider: "twilio",
+        inputMinWords: 2,             // Require at least 2 words before treating it as real speech
+      },
+    ],
     metadata: {
       companyName,
       city,

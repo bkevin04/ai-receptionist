@@ -8,7 +8,9 @@
 const fs = require("fs");
 const path = require("path");
 
-const LOGS_DIR = path.join(__dirname, "..", "logs");
+const LOGS_DIR = process.env.VERCEL
+  ? path.join("/tmp", "logs")
+  : path.join(__dirname, "..", "logs");
 
 // Ensure logs directory exists
 if (!fs.existsSync(LOGS_DIR)) {
@@ -121,6 +123,33 @@ function deleteCall(callId) {
 function getCallStats() {
   const calls = getAllCalls();
 
+  // Aggregate cost data
+  const totalCost = calls.reduce((sum, c) => sum + (c.cost || 0), 0);
+  const callsWithCost = calls.filter((c) => c.cost != null && c.cost > 0);
+  const averageCostPerCall = callsWithCost.length > 0
+    ? totalCost / callsWithCost.length
+    : 0;
+
+  // Aggregate per-provider costs from breakdowns
+  const costByProvider = {};
+  for (const c of calls) {
+    if (c.costBreakdown && typeof c.costBreakdown === "object") {
+      for (const [provider, amount] of Object.entries(c.costBreakdown)) {
+        const val = typeof amount === "number" ? amount : parseFloat(amount) || 0;
+        costByProvider[provider] = (costByProvider[provider] || 0) + val;
+      }
+    }
+  }
+
+  // Cost over time (per day)
+  const costByDay = {};
+  for (const c of calls) {
+    if (c.cost && c.timestamp) {
+      const day = c.timestamp.substring(0, 10); // YYYY-MM-DD
+      costByDay[day] = (costByDay[day] || 0) + c.cost;
+    }
+  }
+
   const stats = {
     totalCalls: calls.length,
     completedCalls: calls.filter((c) => c.status === "completed").length,
@@ -136,6 +165,10 @@ function getCallStats() {
       STANDAARD: calls.filter((c) => c.urgency === "STANDAARD").length,
       GEPLAND: calls.filter((c) => c.urgency === "GEPLAND").length,
     },
+    totalCost,
+    averageCostPerCall,
+    costByProvider,
+    costByDay,
   };
 
   return stats;

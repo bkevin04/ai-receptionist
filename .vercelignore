@@ -1,0 +1,11 @@
+.env
+.env.local
+google-credentials.json
+logs/
+.claude/
+CLAUDE.md
+DASHBOARD.md
+GOOGLE_CALENDAR_SETUP.md
+SETUP.md
+random note
+skill

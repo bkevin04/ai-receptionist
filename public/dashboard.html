@@ -1,383 +1,1186 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="nl">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>AI Receptionist — Call Dashboard</title>
     <style>
-      * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
+      :root {
+        --primary: #4f46e5;
+        --primary-light: #6366f1;
+        --primary-dark: #3730a3;
+        --bg: #f8fafc;
+        --card-bg: #ffffff;
+        --text: #1e293b;
+        --text-secondary: #64748b;
+        --text-muted: #94a3b8;
+        --border: #e2e8f0;
+        --border-light: #f1f5f9;
+        --success: #10b981;
+        --warning: #f59e0b;
+        --danger: #ef4444;
+        --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+        --shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
+        --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+        --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
+        --radius: 8px;
+        --radius-lg: 12px;
       }
+
+      * { margin: 0; padding: 0; box-sizing: border-box; }
 
       body {
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-          "Helvetica Neue", Arial, sans-serif;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        background: var(--bg);
+        color: var(--text);
         min-height: 100vh;
-        padding: 20px;
       }
 
-      .container {
-        max-width: 1400px;
-        margin: 0 auto;
-      }
-
-      header {
-        background: white;
-        border-radius: 12px;
-        padding: 24px;
-        margin-bottom: 24px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-      }
-
-      header h1 {
-        color: #333;
-        margin-bottom: 8px;
-        font-size: 28px;
-      }
-
-      header p {
-        color: #666;
-        font-size: 14px;
-      }
-
-      .stats-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 16px;
-        margin-bottom: 24px;
-      }
-
-      .stat-card {
-        background: white;
-        border-radius: 12px;
-        padding: 20px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-      }
-
-      .stat-card h3 {
-        color: #666;
-        font-size: 12px;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        margin-bottom: 8px;
-      }
-
-      .stat-card .value {
-        color: #667eea;
-        font-size: 32px;
-        font-weight: bold;
-      }
-
-      .stat-card .secondary {
-        color: #999;
-        font-size: 13px;
-        margin-top: 8px;
-      }
-
-      .calls-section {
-        background: white;
-        border-radius: 12px;
-        padding: 24px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-      }
-
-      .calls-section h2 {
-        color: #333;
-        margin-bottom: 20px;
-        font-size: 20px;
-      }
-
-      .call-list {
+      /* ---- Top Navigation ---- */
+      .topnav {
+        background: var(--card-bg);
+        border-bottom: 1px solid var(--border);
+        padding: 0 32px;
+        height: 64px;
         display: flex;
-        flex-direction: column;
+        align-items: center;
+        justify-content: space-between;
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        box-shadow: var(--shadow-sm);
+      }
+
+      .topnav-brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-weight: 700;
+        font-size: 18px;
+        color: var(--text);
+      }
+
+      .topnav-brand .logo {
+        width: 36px;
+        height: 36px;
+        background: var(--primary);
+        border-radius: var(--radius);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 18px;
+      }
+
+      .topnav-actions {
+        display: flex;
+        align-items: center;
         gap: 12px;
       }
 
-      .call-item {
-        display: flex;
+      /* ---- Buttons ---- */
+      .btn {
+        display: inline-flex;
         align-items: center;
-        justify-content: space-between;
-        padding: 16px;
-        border: 1px solid #e0e0e0;
-        border-radius: 8px;
+        gap: 6px;
+        padding: 8px 16px;
+        border-radius: var(--radius);
+        font-size: 13px;
+        font-weight: 600;
         cursor: pointer;
-        transition: all 0.2s ease;
+        border: 1px solid var(--border);
+        background: var(--card-bg);
+        color: var(--text);
+        transition: all 0.15s ease;
       }
 
-      .call-item:hover {
-        background: #f8f9ff;
-        border-color: #667eea;
+      .btn:hover { background: var(--border-light); border-color: var(--text-muted); }
+
+      .btn-primary {
+        background: var(--primary);
+        color: white;
+        border-color: var(--primary);
       }
 
-      .call-info {
-        flex: 1;
+      .btn-primary:hover { background: var(--primary-light); border-color: var(--primary-light); }
+
+      .btn-icon {
+        padding: 8px;
+        min-width: 36px;
+        justify-content: center;
       }
 
-      .call-time {
-        color: #666;
-        font-size: 12px;
+      .btn-sm { padding: 5px 10px; font-size: 12px; }
+
+      /* ---- Language Toggle ---- */
+      .lang-toggle {
+        display: flex;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        overflow: hidden;
       }
 
-      .call-summary {
-        color: #333;
-        font-weight: 500;
-        margin: 4px 0;
-        word-break: break-word;
-      }
-
-      .call-meta {
-        color: #999;
-        font-size: 12px;
-        margin-top: 4px;
-      }
-
-      .urgency-badge {
-        padding: 4px 12px;
-        border-radius: 20px;
+      .lang-toggle button {
+        padding: 6px 14px;
         font-size: 12px;
         font-weight: 600;
-        margin-right: 8px;
-      }
-
-      .urgency-SPOED {
-        background: #ffebee;
-        color: #c62828;
-      }
-
-      .urgency-DRINGEND {
-        background: #fff3e0;
-        color: #e65100;
-      }
-
-      .urgency-STANDAARD {
-        background: #e3f2fd;
-        color: #1565c0;
-      }
-
-      .urgency-GEPLAND {
-        background: #f3e5f5;
-        color: #6a1b9a;
-      }
-
-      .call-duration {
-        color: #999;
-        font-size: 13px;
-        min-width: 80px;
-        text-align: right;
-      }
-
-      .modal {
-        display: none;
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.5);
-        z-index: 1000;
-        align-items: center;
-        justify-content: center;
-      }
-
-      .modal.active {
-        display: flex;
-      }
-
-      .modal-content {
-        background: white;
-        border-radius: 12px;
-        width: 90%;
-        max-width: 800px;
-        max-height: 85vh;
-        overflow-y: auto;
-        padding: 32px;
-        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-      }
-
-      .modal-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 20px;
-      }
-
-      .modal-header h2 {
-        color: #333;
-        font-size: 24px;
-      }
-
-      .modal-close {
-        background: none;
-        border: none;
-        font-size: 28px;
-        color: #999;
         cursor: pointer;
-        padding: 0;
-        width: 32px;
-        height: 32px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+        border: none;
+        background: var(--card-bg);
+        color: var(--text-secondary);
+        transition: all 0.15s ease;
       }
 
-      .modal-close:hover {
-        color: #333;
+      .lang-toggle button.active {
+        background: var(--primary);
+        color: white;
       }
 
-      .detail-section {
+      .lang-toggle button:not(.active):hover { background: var(--border-light); }
+
+      /* ---- Container ---- */
+      .container {
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 24px 32px;
+      }
+
+      /* ---- Page Header ---- */
+      .page-header {
         margin-bottom: 24px;
       }
 
-      .detail-section h3 {
-        color: #667eea;
-        font-size: 12px;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        margin-bottom: 8px;
-      }
-
-      .detail-section p {
-        color: #333;
-        line-height: 1.6;
-        white-space: pre-wrap;
-        word-break: break-word;
-      }
-
-      .detail-grid {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 16px;
-      }
-
-      .detail-item {
-        display: flex;
-        flex-direction: column;
-      }
-
-      .detail-label {
-        color: #999;
-        font-size: 12px;
-        text-transform: uppercase;
+      .page-header h1 {
+        font-size: 24px;
+        font-weight: 700;
+        color: var(--text);
         margin-bottom: 4px;
       }
 
-      .detail-value {
-        color: #333;
-        font-weight: 500;
+      .page-header p {
+        color: var(--text-secondary);
+        font-size: 14px;
       }
 
-      .transcript-box {
-        background: #f5f5f5;
-        border-left: 4px solid #667eea;
-        padding: 16px;
-        border-radius: 4px;
-        font-family: "Monaco", "Courier New", monospace;
-        font-size: 13px;
-        line-height: 1.5;
-        color: #333;
+      /* ---- Stats Grid ---- */
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 16px;
+        margin-bottom: 24px;
       }
 
-      .empty-state {
-        text-align: center;
-        padding: 40px;
-        color: #999;
+      @media (max-width: 768px) {
+        .stats-grid { grid-template-columns: repeat(2, 1fr); }
+        .container { padding: 16px; }
+        .topnav { padding: 0 16px; }
       }
 
-      .empty-state h3 {
-        color: #666;
+      .stat-card {
+        background: var(--card-bg);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        padding: 20px;
+        box-shadow: var(--shadow-sm);
+      }
+
+      .stat-card .stat-label {
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--text-muted);
         margin-bottom: 8px;
       }
 
-      .loading {
-        text-align: center;
-        padding: 40px;
-        color: #999;
+      .stat-card .stat-value {
+        font-size: 28px;
+        font-weight: 700;
+        color: var(--text);
       }
+
+      .stat-card .stat-sub {
+        font-size: 12px;
+        color: var(--text-muted);
+        margin-top: 4px;
+      }
+
+      /* ---- Voice Selector ---- */
+      .voice-selector-wrapper {
+        background: var(--card-bg);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        padding: 20px;
+        margin-bottom: 24px;
+        box-shadow: var(--shadow-sm);
+      }
+
+      .voice-selector-wrapper h3 {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text);
+        margin-bottom: 4px;
+      }
+
+      .voice-selector-wrapper p {
+        font-size: 13px;
+        color: var(--text-secondary);
+        margin-bottom: 16px;
+      }
+
+      .voice-options {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+
+      .voice-option {
+        flex: 1;
+        min-width: 160px;
+        padding: 14px 16px;
+        border: 2px solid var(--border);
+        border-radius: var(--radius);
+        cursor: pointer;
+        transition: all 0.15s ease;
+        background: var(--card-bg);
+      }
+
+      .voice-option:hover { border-color: var(--primary-light); background: #f5f3ff; }
+
+      .voice-option.active {
+        border-color: var(--primary);
+        background: #ede9fe;
+      }
+
+      .voice-option .voice-name {
+        font-weight: 600;
+        font-size: 14px;
+        color: var(--text);
+        margin-bottom: 2px;
+      }
+
+      .voice-option .voice-desc {
+        font-size: 12px;
+        color: var(--text-secondary);
+      }
+
+      .voice-option .voice-check {
+        display: none;
+        float: right;
+        color: var(--primary);
+        font-weight: 700;
+      }
+
+      .voice-option.active .voice-check { display: inline; }
+
+      .voice-status {
+        margin-top: 12px;
+        font-size: 12px;
+        color: var(--success);
+        font-weight: 500;
+        min-height: 18px;
+      }
+
+      /* ---- Calls Table ---- */
+      .calls-section {
+        background: var(--card-bg);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-sm);
+        overflow: hidden;
+      }
+
+      .calls-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 16px 20px;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .calls-header h2 {
+        font-size: 16px;
+        font-weight: 600;
+      }
+
+      .calls-table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+
+      .calls-table thead th {
+        text-align: left;
+        padding: 10px 16px;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--text-muted);
+        background: var(--border-light);
+        border-bottom: 1px solid var(--border);
+      }
+
+      .calls-table tbody tr {
+        cursor: pointer;
+        transition: background 0.1s ease;
+      }
+
+      .calls-table tbody tr:hover { background: #f8faff; }
+
+      .calls-table tbody td {
+        padding: 12px 16px;
+        font-size: 13px;
+        color: var(--text);
+        border-bottom: 1px solid var(--border-light);
+        vertical-align: middle;
+      }
+
+      .calls-table .customer-name {
+        font-weight: 600;
+        color: var(--text);
+      }
+
+      .calls-table .customer-detail {
+        font-size: 12px;
+        color: var(--text-secondary);
+        margin-top: 1px;
+      }
+
+      .calls-table .issue-text {
+        font-weight: 500;
+        max-width: 280px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .urgency-badge {
+        display: inline-block;
+        padding: 3px 10px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+      }
+
+      .urgency-SPOED { background: #fef2f2; color: #dc2626; }
+      .urgency-DRINGEND { background: #fff7ed; color: #ea580c; }
+      .urgency-STANDAARD { background: #eff6ff; color: #2563eb; }
+      .urgency-GEPLAND { background: #faf5ff; color: #7c3aed; }
+
+      .duration-text { color: var(--text-secondary); font-size: 13px; }
+
+      /* ---- Empty & Loading States ---- */
+      .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: var(--text-muted);
+      }
+
+      .empty-state h3 { color: var(--text-secondary); margin-bottom: 8px; font-size: 16px; }
+      .empty-state p { font-size: 14px; }
+
+      .loading { text-align: center; padding: 60px 20px; color: var(--text-muted); }
 
       .spinner {
         display: inline-block;
         width: 24px;
         height: 24px;
-        border: 3px solid #e0e0e0;
-        border-top-color: #667eea;
+        border: 3px solid var(--border);
+        border-top-color: var(--primary);
         border-radius: 50%;
         animation: spin 0.8s linear infinite;
       }
 
-      @keyframes spin {
-        to {
-          transform: rotate(360deg);
-        }
+      @keyframes spin { to { transform: rotate(360deg); } }
+
+      /* ---- Modal ---- */
+      .modal {
+        display: none;
+        position: fixed;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        background: rgba(15, 23, 42, 0.5);
+        backdrop-filter: blur(4px);
+        z-index: 200;
+        align-items: center;
+        justify-content: center;
       }
 
-      .refresh-btn {
-        background: #667eea;
-        color: white;
+      .modal.active { display: flex; }
+
+      .modal-content {
+        background: var(--card-bg);
+        border-radius: var(--radius-lg);
+        width: 90%;
+        max-width: 720px;
+        max-height: 85vh;
+        overflow-y: auto;
+        box-shadow: var(--shadow-lg);
+      }
+
+      .modal-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 20px 24px;
+        border-bottom: 1px solid var(--border);
+        position: sticky;
+        top: 0;
+        background: var(--card-bg);
+        z-index: 1;
+      }
+
+      .modal-top h2 { font-size: 18px; font-weight: 600; }
+
+      .modal-close {
+        background: none;
         border: none;
-        padding: 8px 16px;
-        border-radius: 6px;
+        font-size: 22px;
+        color: var(--text-muted);
         cursor: pointer;
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: var(--radius);
+      }
+
+      .modal-close:hover { background: var(--border-light); color: var(--text); }
+
+      .modal-body { padding: 24px; }
+
+      .detail-section { margin-bottom: 20px; }
+
+      .detail-section h3 {
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--primary);
+        margin-bottom: 10px;
+      }
+
+      .detail-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+      }
+
+      .detail-item .detail-label {
+        font-size: 11px;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+        margin-bottom: 2px;
+      }
+
+      .detail-item .detail-value {
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--text);
+      }
+
+      .detail-section p {
+        color: var(--text);
+        line-height: 1.6;
+        font-size: 14px;
+      }
+
+      .transcript-box {
+        background: var(--border-light);
+        border-left: 3px solid var(--primary);
+        padding: 16px;
+        border-radius: 0 var(--radius) var(--radius) 0;
+        font-family: 'SF Mono', 'Fira Code', monospace;
+        font-size: 12px;
+        line-height: 1.6;
+        color: var(--text);
+        white-space: pre-wrap;
+        word-break: break-word;
+        max-height: 300px;
+        overflow-y: auto;
+      }
+
+      /* ---- Tab Navigation ---- */
+      .tab-nav {
+        display: flex;
+        gap: 0;
+        margin-bottom: 24px;
+        border-bottom: 2px solid var(--border);
+      }
+
+      .tab-btn {
+        padding: 10px 24px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        border: none;
+        background: none;
+        color: var(--text-secondary);
+        border-bottom: 2px solid transparent;
+        margin-bottom: -2px;
+        transition: all 0.15s ease;
+      }
+
+      .tab-btn:hover { color: var(--text); }
+
+      .tab-btn.active {
+        color: var(--primary);
+        border-bottom-color: var(--primary);
+      }
+
+      .tab-content { display: none; }
+      .tab-content.active { display: block; }
+
+      /* ---- Costs Page ---- */
+      .costs-stats-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 16px;
+        margin-bottom: 24px;
+      }
+
+      @media (max-width: 768px) {
+        .costs-stats-grid { grid-template-columns: repeat(2, 1fr); }
+      }
+
+      .cost-value { color: var(--primary); }
+
+      .provider-breakdown {
+        background: var(--card-bg);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        padding: 20px;
+        margin-bottom: 24px;
+        box-shadow: var(--shadow-sm);
+      }
+
+      .provider-breakdown h3 {
+        font-size: 14px;
+        font-weight: 600;
+        margin-bottom: 16px;
+      }
+
+      .provider-bars { display: flex; flex-direction: column; gap: 12px; }
+
+      .provider-bar-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .provider-bar-label {
+        width: 100px;
+        font-size: 13px;
+        font-weight: 500;
+        text-transform: capitalize;
+      }
+
+      .provider-bar-track {
+        flex: 1;
+        height: 24px;
+        background: var(--border-light);
+        border-radius: 4px;
+        overflow: hidden;
+        position: relative;
+      }
+
+      .provider-bar-fill {
+        height: 100%;
+        border-radius: 4px;
+        transition: width 0.3s ease;
+        min-width: 2px;
+      }
+
+      .provider-bar-amount {
+        width: 80px;
+        text-align: right;
         font-size: 13px;
         font-weight: 600;
-        transition: background 0.2s;
+        color: var(--text);
       }
 
-      .refresh-btn:hover {
-        background: #764ba2;
+      .provider-colors {
+        --c-vapi: #6366f1;
+        --c-deepgram: #10b981;
+        --c-openai: #1e293b;
+        --c-elevenlabs: #f59e0b;
+        --c-transport: #64748b;
+        --c-llm: #1e293b;
+        --c-stt: #10b981;
+        --c-tts: #f59e0b;
+      }
+
+      .cost-chart-wrapper {
+        background: var(--card-bg);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        padding: 20px;
+        margin-bottom: 24px;
+        box-shadow: var(--shadow-sm);
+      }
+
+      .cost-chart-wrapper h3 {
+        font-size: 14px;
+        font-weight: 600;
+        margin-bottom: 16px;
+      }
+
+      .cost-chart {
+        display: flex;
+        align-items: flex-end;
+        gap: 6px;
+        height: 160px;
+        padding: 0 4px;
+      }
+
+      .cost-chart-col {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+        min-width: 0;
+      }
+
+      .cost-chart-bar {
+        width: 100%;
+        max-width: 40px;
+        background: var(--primary);
+        border-radius: 4px 4px 0 0;
+        min-height: 2px;
+        transition: height 0.3s ease;
+      }
+
+      .cost-chart-label {
+        font-size: 10px;
+        color: var(--text-muted);
+        white-space: nowrap;
+      }
+
+      .cost-chart-amount {
+        font-size: 10px;
+        font-weight: 600;
+        color: var(--text);
+      }
+
+      .costs-table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+
+      .costs-table thead th {
+        text-align: left;
+        padding: 10px 16px;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--text-muted);
+        background: var(--border-light);
+        border-bottom: 1px solid var(--border);
+      }
+
+      .costs-table tbody td {
+        padding: 10px 16px;
+        font-size: 13px;
+        color: var(--text);
+        border-bottom: 1px solid var(--border-light);
+      }
+
+      .cost-actual { color: var(--primary); font-weight: 600; }
+      .cost-estimated { color: var(--text-muted); font-style: italic; }
+
+      .no-cost-data {
+        text-align: center;
+        padding: 40px 20px;
+        color: var(--text-muted);
+      }
+
+      .rate-card {
+        background: var(--border-light);
+        border-radius: var(--radius);
+        padding: 16px;
+        margin-top: 16px;
+      }
+
+      .rate-card h4 {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text-secondary);
+        margin-bottom: 8px;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+      }
+
+      .rate-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+        gap: 8px;
+      }
+
+      .rate-item {
+        display: flex;
+        justify-content: space-between;
+        font-size: 13px;
+      }
+
+      .rate-item .rate-name { color: var(--text-secondary); text-transform: capitalize; }
+      .rate-item .rate-value { font-weight: 600; color: var(--text); }
+
+      /* ---- Responsive Table ---- */
+      @media (max-width: 900px) {
+        .calls-table thead { display: none; }
+        .calls-table tbody tr {
+          display: block;
+          padding: 12px 16px;
+          border-bottom: 1px solid var(--border);
+        }
+        .calls-table tbody td {
+          display: block;
+          padding: 2px 0;
+          border: none;
+        }
+        .calls-table tbody td:before {
+          content: attr(data-label);
+          font-size: 11px;
+          color: var(--text-muted);
+          text-transform: uppercase;
+          display: block;
+        }
       }
     </style>
   </head>
   <body>
+    <!-- Top Navigation -->
+    <nav class="topnav">
+      <div class="topnav-brand">
+        <div class="logo">R</div>
+        <span data-i18n="brandName">AI Receptionist</span>
+      </div>
+      <div class="topnav-actions">
+        <div class="lang-toggle">
+          <button id="langNL" class="active" onclick="setLanguage('nl')">NL</button>
+          <button id="langEN" onclick="setLanguage('en')">EN</button>
+        </div>
+        <button class="btn" onclick="loadCalls()">
+          <span>&#8635;</span> <span data-i18n="refresh">Refresh</span>
+        </button>
+      </div>
+    </nav>
+
     <div class="container">
-      <header>
-        <h1>📞 AI Receptionist Call Dashboard</h1>
-        <p>Prototype Phase — Real-time Call Logs for Dutch Plumbing Assistant</p>
-      </header>
+      <!-- Page Header -->
+      <div class="page-header">
+        <h1 data-i18n="pageTitle">Call Dashboard</h1>
+        <p data-i18n="pageSubtitle">Monitor incoming calls, customer details, and appointment bookings</p>
+      </div>
 
-      <div class="stats-grid" id="statsGrid">
+      <!-- Tab Navigation -->
+      <div class="tab-nav">
+        <button class="tab-btn active" onclick="switchTab('calls')" data-tab="calls" data-i18n="tabCalls">Calls</button>
+        <button class="tab-btn" onclick="switchTab('costs')" data-tab="costs" data-i18n="tabCosts">Costs & Usage</button>
+      </div>
+
+      <!-- ========== CALLS TAB ========== -->
+      <div class="tab-content active" id="tab-calls">
+
+      <!-- Stats -->
+      <div class="stats-grid">
         <div class="stat-card">
-          <h3>Total Calls</h3>
-          <div class="value" id="totalCalls">0</div>
+          <div class="stat-label" data-i18n="statTotalCalls">Total Calls</div>
+          <div class="stat-value" id="totalCalls">0</div>
         </div>
         <div class="stat-card">
-          <h3>Avg Duration</h3>
-          <div class="value" id="avgDuration">0s</div>
+          <div class="stat-label" data-i18n="statAvgDuration">Avg Duration</div>
+          <div class="stat-value" id="avgDuration">0s</div>
         </div>
         <div class="stat-card">
-          <h3>Completed</h3>
-          <div class="value" id="completedCalls">0</div>
+          <div class="stat-label" data-i18n="statCompleted">Completed</div>
+          <div class="stat-value" id="completedCalls">0</div>
         </div>
         <div class="stat-card">
-          <h3>Escalated</h3>
-          <div class="value" id="escalatedCalls">0</div>
+          <div class="stat-label" data-i18n="statEscalated">Escalated</div>
+          <div class="stat-value" id="escalatedCalls">0</div>
         </div>
       </div>
 
+      <!-- Voice Selector -->
+      <div class="voice-selector-wrapper">
+        <h3 data-i18n="voiceTitle">AI Voice Settings</h3>
+        <p data-i18n="voiceSubtitle">Choose the voice tone for your AI receptionist. Changes apply to the next incoming call.</p>
+        <div class="voice-options" id="voiceOptions"></div>
+        <div class="voice-status" id="voiceStatus"></div>
+      </div>
+
+      <!-- Call Logs Table -->
       <div class="calls-section">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-          <h2>Call Logs</h2>
-          <button class="refresh-btn" onclick="loadCalls()">↻ Refresh</button>
+        <div class="calls-header">
+          <h2 data-i18n="callLogsTitle">Call Logs</h2>
+          <span class="text-muted" id="callCount" style="font-size:13px;color:var(--text-muted);"></span>
         </div>
-        <div id="callsList" class="call-list"></div>
+        <div id="callsTableContainer"></div>
       </div>
-    </div>
+
+      </div><!-- /tab-calls -->
+
+      <!-- ========== COSTS TAB ========== -->
+      <div class="tab-content" id="tab-costs">
+        <!-- Cost Summary Stats -->
+        <div class="costs-stats-grid">
+          <div class="stat-card">
+            <div class="stat-label" data-i18n="costTotal">Total Spent</div>
+            <div class="stat-value cost-value" id="costTotal">$0.00</div>
+            <div class="stat-sub" id="costTotalSub"></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label" data-i18n="costAvgCall">Avg per Call</div>
+            <div class="stat-value cost-value" id="costAvgCall">$0.00</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label" data-i18n="costTotalMinutes">Total Minutes</div>
+            <div class="stat-value" id="costTotalMinutes">0</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label" data-i18n="costPerMinute">Cost per Minute</div>
+            <div class="stat-value cost-value" id="costPerMinute">$0.00</div>
+          </div>
+        </div>
+
+        <!-- Provider Breakdown -->
+        <div class="provider-breakdown provider-colors">
+          <h3 data-i18n="costByProvider">Cost by Provider / Service</h3>
+          <div class="provider-bars" id="providerBars">
+            <div class="no-cost-data" data-i18n="noCostData">No cost data recorded yet. Costs will appear here after calls are completed.</div>
+          </div>
+        </div>
+
+        <!-- Daily Cost Chart -->
+        <div class="cost-chart-wrapper">
+          <h3 data-i18n="costByDay">Daily Costs</h3>
+          <div class="cost-chart" id="costChart">
+            <div class="no-cost-data" data-i18n="noCostDataChart">Cost history will appear here after calls.</div>
+          </div>
+        </div>
+
+        <!-- Per-call Cost Table -->
+        <div class="calls-section">
+          <div class="calls-header">
+            <h2 data-i18n="costPerCall">Cost per Call</h2>
+          </div>
+          <div id="costTableContainer"></div>
+        </div>
+
+        <!-- Rate Card -->
+        <div class="rate-card">
+          <h4 data-i18n="estimatedRates">Estimated API Rates (per minute)</h4>
+          <div class="rate-grid" id="rateGrid"></div>
+        </div>
+      </div><!-- /tab-costs -->
+
+    </div><!-- /container -->
 
     <!-- Call Detail Modal -->
     <div class="modal" id="callModal">
       <div class="modal-content">
-        <div class="modal-header">
-          <h2>Call Details</h2>
+        <div class="modal-top">
+          <h2 data-i18n="callDetailsTitle">Call Details</h2>
           <button class="modal-close" onclick="closeModal()">&times;</button>
         </div>
-        <div id="callDetail"></div>
+        <div class="modal-body" id="callDetail"></div>
       </div>
     </div>
 
     <script>
-      // Load and display calls
+      // ============================================================
+      //  INTERNATIONALIZATION
+      // ============================================================
+      const translations = {
+        nl: {
+          brandName: "AI Receptionist",
+          refresh: "Vernieuwen",
+          pageTitle: "Oproep Dashboard",
+          pageSubtitle: "Monitor inkomende oproepen, klantgegevens en afspraken",
+          statTotalCalls: "Totaal Oproepen",
+          statAvgDuration: "Gem. Duur",
+          statCompleted: "Voltooid",
+          statEscalated: "Geescaleerd",
+          voiceTitle: "AI Stem Instellingen",
+          voiceSubtitle: "Kies de stemtoon voor uw AI-receptionist. Wijzigingen gelden voor de volgende oproep.",
+          callLogsTitle: "Oproep Logboek",
+          callDetailsTitle: "Oproep Details",
+          colTime: "Tijd",
+          colCustomer: "Klant",
+          colPhone: "Telefoon",
+          colEmail: "E-mail",
+          colAddress: "Adres",
+          colIssue: "Onderwerp",
+          colUrgency: "Urgentie",
+          colDuration: "Duur",
+          noCallsTitle: "Nog geen oproepen",
+          noCallsText: "Oproepen verschijnen hier wanneer inkomende gesprekken worden ontvangen.",
+          errorTitle: "Fout bij laden",
+          detailCallId: "Oproep ID",
+          detailTimestamp: "Tijdstip",
+          detailDuration: "Duur",
+          detailUrgency: "Urgentie",
+          detailStatus: "Status",
+          detailEndReason: "Reden beeindiging",
+          detailCustomer: "Klantgegevens",
+          detailName: "Naam",
+          detailPhone: "Telefoon",
+          detailEmail: "E-mail",
+          detailAddress: "Adres",
+          detailSummary: "Samenvatting",
+          detailTranscript: "Volledig Transcript",
+          detailRecording: "Opname",
+          listenRecording: "Opname beluisteren",
+          noSummary: "Geen samenvatting beschikbaar",
+          callsShowing: "oproepen",
+          voiceSaved: "Stem opgeslagen!",
+          voiceError: "Fout bij opslaan stem",
+          na: "N.v.t.",
+          unknown: "Onbekend",
+          urgencySPOED: "SPOED",
+          urgencyDRINGEND: "DRINGEND",
+          urgencySTANDAARD: "STANDAARD",
+          urgencyGEPLAND: "GEPLAND",
+          statusCompleted: "Voltooid",
+          statusEscalated: "Geescaleerd",
+          statusInProgress: "Bezig",
+          statusRinging: "Rinkelt",
+          tabCalls: "Oproepen",
+          tabCosts: "Kosten & Gebruik",
+          costTotal: "Totaal Besteed",
+          costAvgCall: "Gem. per Oproep",
+          costTotalMinutes: "Totaal Minuten",
+          costPerMinute: "Kosten per Minuut",
+          costByProvider: "Kosten per Provider / Service",
+          costByDay: "Dagelijkse Kosten",
+          costPerCall: "Kosten per Oproep",
+          estimatedRates: "Geschatte API-tarieven (per minuut)",
+          noCostData: "Nog geen kostendata beschikbaar. Kosten verschijnen hier na afgeronde oproepen.",
+          noCostDataChart: "Kostengeschiedenis verschijnt hier na oproepen.",
+          costColTime: "Tijd",
+          costColCustomer: "Klant",
+          costColDuration: "Duur",
+          costColCost: "Kosten",
+          costColType: "Type",
+          costActual: "Werkelijk",
+          costEstimated: "Geschat",
+          costIncludesEstimates: "Inclusief geschatte kosten voor oproepen zonder Vapi-kostdata",
+        },
+        en: {
+          brandName: "AI Receptionist",
+          refresh: "Refresh",
+          pageTitle: "Call Dashboard",
+          pageSubtitle: "Monitor incoming calls, customer details, and appointment bookings",
+          statTotalCalls: "Total Calls",
+          statAvgDuration: "Avg Duration",
+          statCompleted: "Completed",
+          statEscalated: "Escalated",
+          voiceTitle: "AI Voice Settings",
+          voiceSubtitle: "Choose the voice tone for your AI receptionist. Changes apply to the next incoming call.",
+          callLogsTitle: "Call Logs",
+          callDetailsTitle: "Call Details",
+          colTime: "Time",
+          colCustomer: "Customer",
+          colPhone: "Phone",
+          colEmail: "Email",
+          colAddress: "Address",
+          colIssue: "Subject",
+          colUrgency: "Urgency",
+          colDuration: "Duration",
+          noCallsTitle: "No calls yet",
+          noCallsText: "Call logs will appear here when incoming calls are received.",
+          errorTitle: "Error loading calls",
+          detailCallId: "Call ID",
+          detailTimestamp: "Timestamp",
+          detailDuration: "Duration",
+          detailUrgency: "Urgency",
+          detailStatus: "Status",
+          detailEndReason: "Ended Reason",
+          detailCustomer: "Customer Details",
+          detailName: "Name",
+          detailPhone: "Phone",
+          detailEmail: "Email",
+          detailAddress: "Address",
+          detailSummary: "Summary",
+          detailTranscript: "Full Transcript",
+          detailRecording: "Recording",
+          listenRecording: "Listen to Recording",
+          noSummary: "No summary available",
+          callsShowing: "calls",
+          voiceSaved: "Voice saved!",
+          voiceError: "Error saving voice",
+          na: "N/A",
+          unknown: "Unknown",
+          urgencySPOED: "EMERGENCY",
+          urgencyDRINGEND: "URGENT",
+          urgencySTANDAARD: "STANDARD",
+          urgencyGEPLAND: "PLANNED",
+          statusCompleted: "Completed",
+          statusEscalated: "Escalated",
+          statusInProgress: "In Progress",
+          statusRinging: "Ringing",
+          tabCalls: "Calls",
+          tabCosts: "Costs & Usage",
+          costTotal: "Total Spent",
+          costAvgCall: "Avg per Call",
+          costTotalMinutes: "Total Minutes",
+          costPerMinute: "Cost per Minute",
+          costByProvider: "Cost by Provider / Service",
+          costByDay: "Daily Costs",
+          costPerCall: "Cost per Call",
+          estimatedRates: "Estimated API Rates (per minute)",
+          noCostData: "No cost data recorded yet. Costs will appear here after calls are completed.",
+          noCostDataChart: "Cost history will appear here after calls.",
+          costColTime: "Time",
+          costColCustomer: "Customer",
+          costColDuration: "Duration",
+          costColCost: "Cost",
+          costColType: "Type",
+          costActual: "Actual",
+          costEstimated: "Estimated",
+          costIncludesEstimates: "Includes estimated costs for calls without Vapi cost data",
+        },
+      };
+
+      let currentLang = "nl";
+
+      function t(key) {
+        return translations[currentLang][key] || translations.en[key] || key;
+      }
+
+      function setLanguage(lang) {
+        currentLang = lang;
+        document.getElementById("langNL").classList.toggle("active", lang === "nl");
+        document.getElementById("langEN").classList.toggle("active", lang === "en");
+        document.documentElement.lang = lang;
+
+        // Update all elements with data-i18n
+        document.querySelectorAll("[data-i18n]").forEach((el) => {
+          el.textContent = t(el.dataset.i18n);
+        });
+
+        // Re-render dynamic content
+        renderVoiceOptions();
+        loadCalls();
+        // Re-render costs if the costs tab is active
+        if (document.getElementById("tab-costs").classList.contains("active")) {
+          loadCosts();
+        }
+        localStorage.setItem("ai-receptionist-lang", lang);
+      }
+
+      // ============================================================
+      //  VOICE OPTIONS
+      // ============================================================
+      const voices = [
+        {
+          id: "XrExE9yKIg1WjnnlVkGX",
+          name: "Matilda",
+          desc_nl: "Warm & professioneel — standaard",
+          desc_en: "Warm & professional — default",
+          style: 0.25,
+          stability: 0.55,
+          similarityBoost: 0.75,
+        },
+        {
+          id: "pFZP5JQG7iQjIQuC4Bku",
+          name: "Lily",
+          desc_nl: "Vriendelijk & helder",
+          desc_en: "Friendly & clear",
+          style: 0.3,
+          stability: 0.5,
+          similarityBoost: 0.8,
+        },
+        {
+          id: "EXAVITQu4vr4xnSDxMaL",
+          name: "Sarah",
+          desc_nl: "Rustig & zakelijk",
+          desc_en: "Calm & business-like",
+          style: 0.15,
+          stability: 0.65,
+          similarityBoost: 0.7,
+        },
+        {
+          id: "jBpfuIE2acCO8z3wKNLl",
+          name: "Gigi",
+          desc_nl: "Energiek & enthousiast",
+          desc_en: "Energetic & enthusiastic",
+          style: 0.45,
+          stability: 0.45,
+          similarityBoost: 0.75,
+        },
+        {
+          id: "onwK4e9ZLuTAKqWW03F9",
+          name: "Daniel",
+          desc_nl: "Mannelijk & betrouwbaar",
+          desc_en: "Male & trustworthy",
+          style: 0.2,
+          stability: 0.6,
+          similarityBoost: 0.75,
+        },
+      ];
+
+      let selectedVoice = localStorage.getItem("ai-receptionist-voice") || voices[0].id;
+
+      function renderVoiceOptions() {
+        const container = document.getElementById("voiceOptions");
+        container.innerHTML = voices
+          .map(
+            (v) => `
+          <div class="voice-option ${v.id === selectedVoice ? "active" : ""}"
+               onclick="selectVoice('${v.id}')">
+            <span class="voice-check">&#10003;</span>
+            <div class="voice-name">${v.name}</div>
+            <div class="voice-desc">${currentLang === "nl" ? v.desc_nl : v.desc_en}</div>
+          </div>
+        `
+          )
+          .join("");
+      }
+
+      async function selectVoice(voiceId) {
+        selectedVoice = voiceId;
+        localStorage.setItem("ai-receptionist-voice", voiceId);
+        renderVoiceOptions();
+
+        const statusEl = document.getElementById("voiceStatus");
+        try {
+          const voice = voices.find((v) => v.id === voiceId);
+          const resp = await fetch("/api/voice", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              voiceId: voice.id,
+              stability: voice.stability,
+              similarityBoost: voice.similarityBoost,
+              style: voice.style,
+            }),
+          });
+          if (resp.ok) {
+            statusEl.textContent = `${t("voiceSaved")} (${voice.name})`;
+            statusEl.style.color = "var(--success)";
+          } else {
+            statusEl.textContent = t("voiceError");
+            statusEl.style.color = "var(--danger)";
+          }
+        } catch {
+          statusEl.textContent = t("voiceError");
+          statusEl.style.color = "var(--danger)";
+        }
+
+        setTimeout(() => { statusEl.textContent = ""; }, 3000);
+      }
+
+      // ============================================================
+      //  CALL LOG LOADING
+      // ============================================================
       async function loadCalls() {
         try {
           const response = await fetch("/api/calls");
@@ -386,56 +1189,86 @@
 
           // Update stats
           document.getElementById("totalCalls").textContent = stats.totalCalls;
-          document.getElementById("avgDuration").textContent = `${stats.averageDuration}s`;
-          document.getElementById("completedCalls").textContent =
-            stats.completedCalls;
-          document.getElementById("escalatedCalls").textContent =
-            stats.escalatedCalls;
+          document.getElementById("avgDuration").textContent = formatDuration(stats.averageDuration);
+          document.getElementById("completedCalls").textContent = stats.completedCalls;
+          document.getElementById("escalatedCalls").textContent = stats.escalatedCalls;
 
-          // Update call list
-          const callsList = document.getElementById("callsList");
+          // Call count
+          document.getElementById("callCount").textContent = `${calls.length} ${t("callsShowing")}`;
+
+          const container = document.getElementById("callsTableContainer");
 
           if (calls.length === 0) {
-            callsList.innerHTML = `
+            container.innerHTML = `
               <div class="empty-state">
-                <h3>No calls yet</h3>
-                <p>Call logs will appear here when incoming calls are received.</p>
-              </div>
-            `;
+                <h3>${t("noCallsTitle")}</h3>
+                <p>${t("noCallsText")}</p>
+              </div>`;
             return;
           }
 
-          callsList.innerHTML = calls
-            .map(
-              (call) => `
-            <div class="call-item" onclick="viewCallDetail('${call.id}')">
-              <div class="call-info">
-                <div class="call-time">${new Date(call.timestamp).toLocaleString()}</div>
-                <div class="call-summary">${escapeHtml(call.summary || "Call received")}</div>
-                <div class="call-meta">
-                  ${call.customerPhoneNumber || "Unknown number"} • ${call.duration}s
-                </div>
-              </div>
-              <span class="urgency-badge urgency-${call.urgency || "STANDAARD"}">
-                ${call.urgency || "STANDAARD"}
-              </span>
-              <div class="call-duration">${formatDuration(call.duration)}</div>
-            </div>
-          `
-            )
-            .join("");
+          container.innerHTML = `
+            <table class="calls-table">
+              <thead>
+                <tr>
+                  <th>${t("colTime")}</th>
+                  <th>${t("colCustomer")}</th>
+                  <th>${t("colPhone")}</th>
+                  <th>${t("colEmail")}</th>
+                  <th>${t("colAddress")}</th>
+                  <th>${t("colIssue")}</th>
+                  <th>${t("colUrgency")}</th>
+                  <th>${t("colDuration")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${calls
+                  .map(
+                    (call) => `
+                  <tr onclick="viewCallDetail('${call.id}')">
+                    <td data-label="${t("colTime")}">
+                      <div style="font-size:13px;">${formatDate(call.timestamp)}</div>
+                      <div style="font-size:11px;color:var(--text-muted);">${formatTime(call.timestamp)}</div>
+                    </td>
+                    <td data-label="${t("colCustomer")}">
+                      <div class="customer-name">${escapeHtml(call.customerName || t("unknown"))}</div>
+                    </td>
+                    <td data-label="${t("colPhone")}">
+                      <span style="font-size:13px;">${escapeHtml(call.customerPhone || call.customerPhoneNumber || call.phoneNumber || "—")}</span>
+                    </td>
+                    <td data-label="${t("colEmail")}">
+                      <span style="font-size:13px;color:var(--text-secondary);">${escapeHtml(call.customerEmail || "—")}</span>
+                    </td>
+                    <td data-label="${t("colAddress")}">
+                      <span style="font-size:13px;">${escapeHtml(call.customerAddress || "—")}</span>
+                    </td>
+                    <td data-label="${t("colIssue")}">
+                      <div class="issue-text">${escapeHtml(call.briefIssue || call.summary || "—")}</div>
+                    </td>
+                    <td data-label="${t("colUrgency")}">
+                      <span class="urgency-badge urgency-${call.urgency || "STANDAARD"}">${translateUrgency(call.urgency)}</span>
+                    </td>
+                    <td data-label="${t("colDuration")}">
+                      <span class="duration-text">${formatDuration(call.duration)}</span>
+                    </td>
+                  </tr>`
+                  )
+                  .join("")}
+              </tbody>
+            </table>`;
         } catch (error) {
           console.error("Failed to load calls:", error);
-          document.getElementById("callsList").innerHTML = `
+          document.getElementById("callsTableContainer").innerHTML = `
             <div class="empty-state">
-              <h3>Error loading calls</h3>
+              <h3>${t("errorTitle")}</h3>
               <p>${escapeHtml(error.message)}</p>
-            </div>
-          `;
+            </div>`;
         }
       }
 
-      // View call detail
+      // ============================================================
+      //  CALL DETAIL MODAL
+      // ============================================================
       async function viewCallDetail(callId) {
         try {
           const response = await fetch(`/api/calls/${callId}`);
@@ -446,62 +1279,75 @@
 
           detail.innerHTML = `
             <div class="detail-section">
-              <h3>Metadata</h3>
+              <h3>${t("detailCallId").replace("Call ID", t("detailCallId"))}</h3>
               <div class="detail-grid">
                 <div class="detail-item">
-                  <span class="detail-label">Call ID</span>
-                  <span class="detail-value">${escapeHtml(call.id)}</span>
+                  <span class="detail-label">${t("detailCallId")}</span>
+                  <span class="detail-value" style="font-size:12px;font-family:monospace;">${escapeHtml(call.id)}</span>
                 </div>
                 <div class="detail-item">
-                  <span class="detail-label">Timestamp</span>
+                  <span class="detail-label">${t("detailTimestamp")}</span>
                   <span class="detail-value">${new Date(call.timestamp).toLocaleString()}</span>
                 </div>
                 <div class="detail-item">
-                  <span class="detail-label">Duration</span>
-                  <span class="detail-value">${call.duration}s</span>
+                  <span class="detail-label">${t("detailDuration")}</span>
+                  <span class="detail-value">${formatDuration(call.duration)}</span>
                 </div>
                 <div class="detail-item">
-                  <span class="detail-label">Urgency</span>
+                  <span class="detail-label">${t("detailUrgency")}</span>
                   <span class="detail-value">
-                    <span class="urgency-badge urgency-${call.urgency || "STANDAARD"}">
-                      ${call.urgency || "STANDAARD"}
-                    </span>
+                    <span class="urgency-badge urgency-${call.urgency || "STANDAARD"}">${translateUrgency(call.urgency)}</span>
                   </span>
                 </div>
                 <div class="detail-item">
-                  <span class="detail-label">Status</span>
-                  <span class="detail-value">${escapeHtml(call.status)}</span>
+                  <span class="detail-label">${t("detailStatus")}</span>
+                  <span class="detail-value">${translateStatus(call.status)}</span>
                 </div>
                 <div class="detail-item">
-                  <span class="detail-label">Ended Reason</span>
-                  <span class="detail-value">${escapeHtml(call.endedReason || "N/A")}</span>
+                  <span class="detail-label">${t("detailEndReason")}</span>
+                  <span class="detail-value">${escapeHtml(call.endedReason || t("na"))}</span>
                 </div>
               </div>
             </div>
 
             <div class="detail-section">
-              <h3>Summary</h3>
-              <p>${escapeHtml(call.summary || "No summary available")}</p>
+              <h3>${t("detailCustomer")}</h3>
+              <div class="detail-grid">
+                <div class="detail-item">
+                  <span class="detail-label">${t("detailName")}</span>
+                  <span class="detail-value">${escapeHtml(call.customerName || t("unknown"))}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">${t("detailPhone")}</span>
+                  <span class="detail-value">${escapeHtml(call.customerPhone || call.customerPhoneNumber || call.phoneNumber || "—")}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">${t("detailEmail")}</span>
+                  <span class="detail-value">${escapeHtml(call.customerEmail || "—")}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">${t("detailAddress")}</span>
+                  <span class="detail-value">${escapeHtml(call.customerAddress || "—")}</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="detail-section">
+              <h3>${t("detailSummary")}</h3>
+              <p>${escapeHtml(call.summary || t("noSummary"))}</p>
             </div>
 
             ${call.transcript ? `
               <div class="detail-section">
-                <h3>Full Transcript</h3>
+                <h3>${t("detailTranscript")}</h3>
                 <div class="transcript-box">${escapeHtml(call.transcript)}</div>
               </div>
             ` : ""}
 
             ${call.recordingUrl ? `
               <div class="detail-section">
-                <h3>Recording</h3>
-                <p><a href="${escapeHtml(call.recordingUrl)}" target="_blank">🔊 Listen to Recording</a></p>
-              </div>
-            ` : ""}
-
-            ${call.customerPhoneNumber ? `
-              <div class="detail-section">
-                <h3>Customer Phone</h3>
-                <p>${escapeHtml(call.customerPhoneNumber)}</p>
+                <h3>${t("detailRecording")}</h3>
+                <p><a href="${escapeHtml(call.recordingUrl)}" target="_blank" style="color:var(--primary);text-decoration:none;font-weight:500;">${t("listenRecording")}</a></p>
               </div>
             ` : ""}
           `;
@@ -509,46 +1355,269 @@
           modal.classList.add("active");
         } catch (error) {
           console.error("Failed to load call detail:", error);
-          alert("Failed to load call details");
         }
       }
 
-      // Close modal
       function closeModal() {
         document.getElementById("callModal").classList.remove("active");
       }
 
-      // Close modal when clicking outside
       document.getElementById("callModal").addEventListener("click", (e) => {
-        if (e.target.id === "callModal") {
-          closeModal();
-        }
+        if (e.target.id === "callModal") closeModal();
       });
 
-      // Format duration
+      // ============================================================
+      //  TRANSLATION HELPERS
+      // ============================================================
+      function translateUrgency(urgency) {
+        const key = "urgency" + (urgency || "STANDAARD");
+        return t(key);
+      }
+
+      function translateStatus(status) {
+        const statusMap = {
+          completed: "statusCompleted",
+          escalated: "statusEscalated",
+          "in-progress": "statusInProgress",
+          ringing: "statusRinging",
+        };
+        const key = statusMap[status] || null;
+        return key ? t(key) : status || "—";
+      }
+
+      // ============================================================
+      //  UTILITIES
+      // ============================================================
       function formatDuration(seconds) {
-        if (seconds < 60) return `${seconds}s`;
+        if (!seconds || seconds === 0) return "0s";
+        if (seconds < 60) return `${Math.round(seconds)}s`;
         const minutes = Math.floor(seconds / 60);
-        const secs = seconds % 60;
+        const secs = Math.round(seconds % 60);
         return `${minutes}m ${secs}s`;
       }
 
-      // Escape HTML
+      function formatDate(ts) {
+        if (!ts) return "—";
+        const d = new Date(ts);
+        return d.toLocaleDateString(currentLang === "nl" ? "nl-NL" : "en-US", {
+          day: "numeric", month: "short",
+        });
+      }
+
+      function formatTime(ts) {
+        if (!ts) return "";
+        return new Date(ts).toLocaleTimeString(currentLang === "nl" ? "nl-NL" : "en-US", {
+          hour: "2-digit", minute: "2-digit",
+        });
+      }
+
       function escapeHtml(text) {
         if (!text) return "";
-        const map = {
-          "&": "&amp;",
-          "<": "&lt;",
-          ">": "&gt;",
-          '"': "&quot;",
-          "'": "&#039;",
-        };
+        if (typeof text !== "string") text = String(text);
+        const map = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" };
         return text.replace(/[&<>"']/g, (m) => map[m]);
       }
 
-      // Auto-refresh every 5 seconds
-      loadCalls();
-      setInterval(loadCalls, 5000);
+      // ============================================================
+      //  TAB SWITCHING
+      // ============================================================
+      function switchTab(tabName) {
+        document.querySelectorAll(".tab-btn").forEach((btn) => {
+          btn.classList.toggle("active", btn.dataset.tab === tabName);
+        });
+        document.querySelectorAll(".tab-content").forEach((tab) => {
+          tab.classList.toggle("active", tab.id === `tab-${tabName}`);
+        });
+        if (tabName === "costs") loadCosts();
+      }
+
+      // ============================================================
+      //  COSTS LOADING
+      // ============================================================
+      const providerColorMap = {
+        vapi: "#6366f1",
+        deepgram: "#10b981",
+        stt: "#10b981",
+        openai: "#1e293b",
+        llm: "#1e293b",
+        elevenlabs: "#f59e0b",
+        tts: "#f59e0b",
+        transport: "#64748b",
+      };
+
+      async function loadCosts() {
+        try {
+          const resp = await fetch("/api/costs");
+          const data = await resp.json();
+          const { summary, rates, calls } = data;
+
+          const effectiveTotal = (summary.totalCost || 0) + (summary.estimatedTotal || 0);
+          const effectiveAvg = summary.totalCalls > 0 ? effectiveTotal / summary.totalCalls : 0;
+          const costPerMin = summary.totalMinutes > 0 ? effectiveTotal / summary.totalMinutes : 0;
+
+          document.getElementById("costTotal").textContent = `$${effectiveTotal.toFixed(2)}`;
+          document.getElementById("costTotalSub").textContent =
+            summary.estimatedTotal > 0 ? t("costIncludesEstimates") : "";
+          document.getElementById("costAvgCall").textContent = `$${effectiveAvg.toFixed(3)}`;
+          document.getElementById("costTotalMinutes").textContent = summary.totalMinutes.toFixed(1);
+          document.getElementById("costPerMinute").textContent = `$${costPerMin.toFixed(3)}`;
+
+          // Provider breakdown bars
+          renderProviderBars(summary.costByProvider, rates);
+
+          // Daily chart
+          renderDailyChart(summary.costByDay);
+
+          // Rate card
+          renderRateCard(rates);
+
+          // Per-call cost table
+          renderCostTable(calls);
+        } catch (err) {
+          console.error("Failed to load costs:", err);
+        }
+      }
+
+      function renderProviderBars(costByProvider, rates) {
+        const container = document.getElementById("providerBars");
+
+        // Merge actual provider costs with rate-card providers for display
+        const providers = { ...rates };
+        if (costByProvider) {
+          for (const [k, v] of Object.entries(costByProvider)) {
+            providers[k] = v; // actual cost overrides rate placeholder
+          }
+        }
+
+        const entries = Object.entries(providers);
+        if (entries.length === 0) {
+          container.innerHTML = `<div class="no-cost-data">${t("noCostData")}</div>`;
+          return;
+        }
+
+        const hasActualData = costByProvider && Object.keys(costByProvider).length > 0;
+        const maxVal = Math.max(...entries.map(([, v]) => v), 0.01);
+
+        container.innerHTML = entries
+          .sort((a, b) => b[1] - a[1])
+          .map(([name, amount]) => {
+            const pct = (amount / maxVal) * 100;
+            const color = providerColorMap[name.toLowerCase()] || "#94a3b8";
+            const displayAmount = hasActualData ? `$${amount.toFixed(4)}` : `$${amount.toFixed(4)}/min`;
+            return `
+              <div class="provider-bar-row">
+                <div class="provider-bar-label">${name}</div>
+                <div class="provider-bar-track">
+                  <div class="provider-bar-fill" style="width:${pct}%;background:${color};"></div>
+                </div>
+                <div class="provider-bar-amount">${displayAmount}</div>
+              </div>`;
+          })
+          .join("");
+      }
+
+      function renderDailyChart(costByDay) {
+        const container = document.getElementById("costChart");
+
+        if (!costByDay || Object.keys(costByDay).length === 0) {
+          container.innerHTML = `<div class="no-cost-data">${t("noCostDataChart")}</div>`;
+          return;
+        }
+
+        const entries = Object.entries(costByDay).sort((a, b) => a[0].localeCompare(b[0]));
+        const maxCost = Math.max(...entries.map(([, v]) => v), 0.01);
+
+        container.innerHTML = entries
+          .map(([day, amount]) => {
+            const heightPct = (amount / maxCost) * 100;
+            const label = day.substring(5); // MM-DD
+            return `
+              <div class="cost-chart-col">
+                <div class="cost-chart-amount">$${amount.toFixed(2)}</div>
+                <div class="cost-chart-bar" style="height:${Math.max(heightPct, 2)}%;"></div>
+                <div class="cost-chart-label">${label}</div>
+              </div>`;
+          })
+          .join("");
+      }
+
+      function renderRateCard(rates) {
+        const container = document.getElementById("rateGrid");
+        if (!rates) return;
+
+        container.innerHTML = Object.entries(rates)
+          .map(
+            ([name, rate]) => `
+            <div class="rate-item">
+              <span class="rate-name">${name}</span>
+              <span class="rate-value">$${rate.toFixed(4)}/min</span>
+            </div>`
+          )
+          .join("");
+      }
+
+      function renderCostTable(calls) {
+        const container = document.getElementById("costTableContainer");
+
+        if (!calls || calls.length === 0) {
+          container.innerHTML = `<div class="no-cost-data">${t("noCostData")}</div>`;
+          return;
+        }
+
+        container.innerHTML = `
+          <table class="costs-table">
+            <thead>
+              <tr>
+                <th>${t("costColTime")}</th>
+                <th>${t("costColCustomer")}</th>
+                <th>${t("costColDuration")}</th>
+                <th>${t("costColCost")}</th>
+                <th>${t("costColType")}</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${calls
+                .map((c) => {
+                  const costVal = c.cost ?? c.estimatedCost ?? null;
+                  const isEstimated = c.cost == null && c.estimatedCost != null;
+                  const costDisplay = costVal != null ? `$${costVal.toFixed(4)}` : "—";
+                  const costClass = isEstimated ? "cost-estimated" : "cost-actual";
+                  const typeLabel = isEstimated ? t("costEstimated") : (costVal != null ? t("costActual") : "—");
+                  return `
+                    <tr>
+                      <td>
+                        <div style="font-size:13px;">${formatDate(c.timestamp)}</div>
+                        <div style="font-size:11px;color:var(--text-muted);">${formatTime(c.timestamp)}</div>
+                      </td>
+                      <td>${escapeHtml(c.customerName || t("unknown"))}</td>
+                      <td>${formatDuration(c.duration)}</td>
+                      <td class="${costClass}">${costDisplay}</td>
+                      <td><span style="font-size:12px;">${typeLabel}</span></td>
+                    </tr>`;
+                })
+                .join("")}
+            </tbody>
+          </table>`;
+      }
+
+      // ============================================================
+      //  INIT
+      // ============================================================
+      (function init() {
+        // Restore saved language
+        const savedLang = localStorage.getItem("ai-receptionist-lang");
+        if (savedLang && savedLang !== currentLang) {
+          setLanguage(savedLang);
+        }
+
+        // Restore saved voice
+        const savedVoice = localStorage.getItem("ai-receptionist-voice");
+        if (savedVoice) selectedVoice = savedVoice;
+
+        renderVoiceOptions();
+        loadCalls();
+        setInterval(loadCalls, 5000);
+      })();
     </script>
   </body>
 </html>
