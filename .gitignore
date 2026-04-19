@@ -1,0 +1,23 @@
+# Environment variables (API keys, secrets)
+.env
+.env.local
+.env.*.local
+
+# Google service account credentials (contains private key)
+google-credentials.json
+
+# Dependencies
+node_modules/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/

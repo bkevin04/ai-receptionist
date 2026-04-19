@@ -1,0 +1,25 @@
+{
+  "name": "ai-receptionist-plumber-nl",
+  "version": "1.0.0",
+  "description": "AI-powered phone receptionist for Dutch plumbing companies using Vapi",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "setup": "node src/setup-assistant.js"
+  },
+  "keywords": [
+    "vapi",
+    "ai-receptionist",
+    "plumber",
+    "netherlands"
+  ],
+  "license": "ISC",
+  "dependencies": {
+    "@vapi-ai/server-sdk": "^0.11.0",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "google-auth-library": "^10.6.2",
+    "googleapis": "^171.4.0"
+  }
+}

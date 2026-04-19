@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Receptionist — Call Dashboard</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          "Helvetica Neue", Arial, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 20px;
+      }
+
+      .container {
+        max-width: 1400px;
+        margin: 0 auto;
+      }
+
+      header {
+        background: white;
+        border-radius: 12px;
+        padding: 24px;
+        margin-bottom: 24px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      }
+
+      header h1 {
+        color: #333;
+        margin-bottom: 8px;
+        font-size: 28px;
+      }
+
+      header p {
+        color: #666;
+        font-size: 14px;
+      }
+
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+        margin-bottom: 24px;
+      }
+
+      .stat-card {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      }
+
+      .stat-card h3 {
+        color: #666;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 8px;
+      }
+
+      .stat-card .value {
+        color: #667eea;
+        font-size: 32px;
+        font-weight: bold;
+      }
+
+      .stat-card .secondary {
+        color: #999;
+        font-size: 13px;
+        margin-top: 8px;
+      }
+
+      .calls-section {
+        background: white;
+        border-radius: 12px;
+        padding: 24px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      }
+
+      .calls-section h2 {
+        color: #333;
+        margin-bottom: 20px;
+        font-size: 20px;
+      }
+
+      .call-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .call-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 16px;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .call-item:hover {
+        background: #f8f9ff;
+        border-color: #667eea;
+      }
+
+      .call-info {
+        flex: 1;
+      }
+
+      .call-time {
+        color: #666;
+        font-size: 12px;
+      }
+
+      .call-summary {
+        color: #333;
+        font-weight: 500;
+        margin: 4px 0;
+        word-break: break-word;
+      }
+
+      .call-meta {
+        color: #999;
+        font-size: 12px;
+        margin-top: 4px;
+      }
+
+      .urgency-badge {
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        margin-right: 8px;
+      }
+
+      .urgency-SPOED {
+        background: #ffebee;
+        color: #c62828;
+      }
+
+      .urgency-DRINGEND {
+        background: #fff3e0;
+        color: #e65100;
+      }
+
+      .urgency-STANDAARD {
+        background: #e3f2fd;
+        color: #1565c0;
+      }
+
+      .urgency-GEPLAND {
+        background: #f3e5f5;
+        color: #6a1b9a;
+      }
+
+      .call-duration {
+        color: #999;
+        font-size: 13px;
+        min-width: 80px;
+        text-align: right;
+      }
+
+      .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 1000;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .modal.active {
+        display: flex;
+      }
+
+      .modal-content {
+        background: white;
+        border-radius: 12px;
+        width: 90%;
+        max-width: 800px;
+        max-height: 85vh;
+        overflow-y: auto;
+        padding: 32px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      }
+
+      .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+      }
+
+      .modal-header h2 {
+        color: #333;
+        font-size: 24px;
+      }
+
+      .modal-close {
+        background: none;
+        border: none;
+        font-size: 28px;
+        color: #999;
+        cursor: pointer;
+        padding: 0;
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .modal-close:hover {
+        color: #333;
+      }
+
+      .detail-section {
+        margin-bottom: 24px;
+      }
+
+      .detail-section h3 {
+        color: #667eea;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 8px;
+      }
+
+      .detail-section p {
+        color: #333;
+        line-height: 1.6;
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+
+      .detail-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+      }
+
+      .detail-item {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .detail-label {
+        color: #999;
+        font-size: 12px;
+        text-transform: uppercase;
+        margin-bottom: 4px;
+      }
+
+      .detail-value {
+        color: #333;
+        font-weight: 500;
+      }
+
+      .transcript-box {
+        background: #f5f5f5;
+        border-left: 4px solid #667eea;
+        padding: 16px;
+        border-radius: 4px;
+        font-family: "Monaco", "Courier New", monospace;
+        font-size: 13px;
+        line-height: 1.5;
+        color: #333;
+      }
+
+      .empty-state {
+        text-align: center;
+        padding: 40px;
+        color: #999;
+      }
+
+      .empty-state h3 {
+        color: #666;
+        margin-bottom: 8px;
+      }
+
+      .loading {
+        text-align: center;
+        padding: 40px;
+        color: #999;
+      }
+
+      .spinner {
+        display: inline-block;
+        width: 24px;
+        height: 24px;
+        border: 3px solid #e0e0e0;
+        border-top-color: #667eea;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      .refresh-btn {
+        background: #667eea;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: 600;
+        transition: background 0.2s;
+      }
+
+      .refresh-btn:hover {
+        background: #764ba2;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1>📞 AI Receptionist Call Dashboard</h1>
+        <p>Prototype Phase — Real-time Call Logs for Dutch Plumbing Assistant</p>
+      </header>
+
+      <div class="stats-grid" id="statsGrid">
+        <div class="stat-card">
+          <h3>Total Calls</h3>
+          <div class="value" id="totalCalls">0</div>
+        </div>
+        <div class="stat-card">
+          <h3>Avg Duration</h3>
+          <div class="value" id="avgDuration">0s</div>
+        </div>
+        <div class="stat-card">
+          <h3>Completed</h3>
+          <div class="value" id="completedCalls">0</div>
+        </div>
+        <div class="stat-card">
+          <h3>Escalated</h3>
+          <div class="value" id="escalatedCalls">0</div>
+        </div>
+      </div>
+
+      <div class="calls-section">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+          <h2>Call Logs</h2>
+          <button class="refresh-btn" onclick="loadCalls()">↻ Refresh</button>
+        </div>
+        <div id="callsList" class="call-list"></div>
+      </div>
+    </div>
+
+    <!-- Call Detail Modal -->
+    <div class="modal" id="callModal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Call Details</h2>
+          <button class="modal-close" onclick="closeModal()">&times;</button>
+        </div>
+        <div id="callDetail"></div>
+      </div>
+    </div>
+
+    <script>
+      // Load and display calls
+      async function loadCalls() {
+        try {
+          const response = await fetch("/api/calls");
+          const data = await response.json();
+          const { calls, stats } = data;
+
+          // Update stats
+          document.getElementById("totalCalls").textContent = stats.totalCalls;
+          document.getElementById("avgDuration").textContent = `${stats.averageDuration}s`;
+          document.getElementById("completedCalls").textContent =
+            stats.completedCalls;
+          document.getElementById("escalatedCalls").textContent =
+            stats.escalatedCalls;
+
+          // Update call list
+          const callsList = document.getElementById("callsList");
+
+          if (calls.length === 0) {
+            callsList.innerHTML = `
+              <div class="empty-state">
+                <h3>No calls yet</h3>
+                <p>Call logs will appear here when incoming calls are received.</p>
+              </div>
+            `;
+            return;
+          }
+
+          callsList.innerHTML = calls
+            .map(
+              (call) => `
+            <div class="call-item" onclick="viewCallDetail('${call.id}')">
+              <div class="call-info">
+                <div class="call-time">${new Date(call.timestamp).toLocaleString()}</div>
+                <div class="call-summary">${escapeHtml(call.summary || "Call received")}</div>
+                <div class="call-meta">
+                  ${call.customerPhoneNumber || "Unknown number"} • ${call.duration}s
+                </div>
+              </div>
+              <span class="urgency-badge urgency-${call.urgency || "STANDAARD"}">
+                ${call.urgency || "STANDAARD"}
+              </span>
+              <div class="call-duration">${formatDuration(call.duration)}</div>
+            </div>
+          `
+            )
+            .join("");
+        } catch (error) {
+          console.error("Failed to load calls:", error);
+          document.getElementById("callsList").innerHTML = `
+            <div class="empty-state">
+              <h3>Error loading calls</h3>
+              <p>${escapeHtml(error.message)}</p>
+            </div>
+          `;
+        }
+      }
+
+      // View call detail
+      async function viewCallDetail(callId) {
+        try {
+          const response = await fetch(`/api/calls/${callId}`);
+          const call = await response.json();
+
+          const modal = document.getElementById("callModal");
+          const detail = document.getElementById("callDetail");
+
+          detail.innerHTML = `
+            <div class="detail-section">
+              <h3>Metadata</h3>
+              <div class="detail-grid">
+                <div class="detail-item">
+                  <span class="detail-label">Call ID</span>
+                  <span class="detail-value">${escapeHtml(call.id)}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Timestamp</span>
+                  <span class="detail-value">${new Date(call.timestamp).toLocaleString()}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Duration</span>
+                  <span class="detail-value">${call.duration}s</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Urgency</span>
+                  <span class="detail-value">
+                    <span class="urgency-badge urgency-${call.urgency || "STANDAARD"}">
+                      ${call.urgency || "STANDAARD"}
+                    </span>
+                  </span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Status</span>
+                  <span class="detail-value">${escapeHtml(call.status)}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Ended Reason</span>
+                  <span class="detail-value">${escapeHtml(call.endedReason || "N/A")}</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="detail-section">
+              <h3>Summary</h3>
+              <p>${escapeHtml(call.summary || "No summary available")}</p>
+            </div>
+
+            ${call.transcript ? `
+              <div class="detail-section">
+                <h3>Full Transcript</h3>
+                <div class="transcript-box">${escapeHtml(call.transcript)}</div>
+              </div>
+            ` : ""}
+
+            ${call.recordingUrl ? `
+              <div class="detail-section">
+                <h3>Recording</h3>
+                <p><a href="${escapeHtml(call.recordingUrl)}" target="_blank">🔊 Listen to Recording</a></p>
+              </div>
+            ` : ""}
+
+            ${call.customerPhoneNumber ? `
+              <div class="detail-section">
+                <h3>Customer Phone</h3>
+                <p>${escapeHtml(call.customerPhoneNumber)}</p>
+              </div>
+            ` : ""}
+          `;
+
+          modal.classList.add("active");
+        } catch (error) {
+          console.error("Failed to load call detail:", error);
+          alert("Failed to load call details");
+        }
+      }
+
+      // Close modal
+      function closeModal() {
+        document.getElementById("callModal").classList.remove("active");
+      }
+
+      // Close modal when clicking outside
+      document.getElementById("callModal").addEventListener("click", (e) => {
+        if (e.target.id === "callModal") {
+          closeModal();
+        }
+      });
+
+      // Format duration
+      function formatDuration(seconds) {
+        if (seconds < 60) return `${seconds}s`;
+        const minutes = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${minutes}m ${secs}s`;
+      }
+
+      // Escape HTML
+      function escapeHtml(text) {
+        if (!text) return "";
+        const map = {
+          "&": "&amp;",
+          "<": "&lt;",
+          ">": "&gt;",
+          '"': "&quot;",
+          "'": "&#039;",
+        };
+        return text.replace(/[&<>"']/g, (m) => map[m]);
+      }
+
+      // Auto-refresh every 5 seconds
+      loadCalls();
+      setInterval(loadCalls, 5000);
+    </script>
+  </body>
+</html>
